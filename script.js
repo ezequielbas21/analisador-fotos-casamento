@@ -1,3 +1,13 @@
+// ======================================================
+// ANALISADOR DE FOTOS DO CASAMENTO
+// Google Drive + Cloudflare Worker + Gemini
+// ======================================================
+
+
+// ======================================================
+// ELEMENTOS DA PÁGINA
+// ======================================================
+
 const btnConectar = document.getElementById("btnConectar");
 const btnIniciar = document.getElementById("btnIniciar");
 const btnPausar = document.getElementById("btnPausar");
@@ -19,21 +29,42 @@ const infoGaleria = document.getElementById("infoGaleria");
 const galeria = document.getElementById("galeria");
 
 
-// COLE SUA CHAVE ENTRE AS ASPAS
+// ======================================================
+// CONFIGURAÇÕES
+// ======================================================
+
+// IMPORTANTE:
+// Coloque aqui SOMENTE sua chave da Google Drive API.
+// Mantenha a chave entre aspas.
 const API_KEY = "AIzaSyAPl2tgM9c07P0FtM9saMMvWa8vi_rzR08";
 
+
+// Endereço do nosso backend protegido
+const WORKER_URL =
+  "https://analisador-fotos-api.ezequielsilva2614.workers.dev/";
+
+
+// Quantidade de fotos mostradas por vez na galeria
+const FOTOS_POR_PAGINA = 24;
+
+
+// ======================================================
+// VARIÁVEIS
+// ======================================================
 
 let todasAsFotos = [];
 
 let quantidadeExibida = 0;
 
-const FOTOS_POR_PAGINA = 24;
 
-
+// ======================================================
+// EXTRAIR ID DA PASTA DO GOOGLE DRIVE
+// ======================================================
 
 function extrairIdPasta(link) {
 
-  const match = link.match(/\/folders\/([a-zA-Z0-9_-]+)/);
+  const match =
+    link.match(/\/folders\/([a-zA-Z0-9_-]+)/);
 
   if (!match) {
     return null;
@@ -44,6 +75,9 @@ function extrairIdPasta(link) {
 }
 
 
+// ======================================================
+// BUSCAR TODAS AS FOTOS DA PASTA
+// ======================================================
 
 async function buscarFotosDaPasta(folderId) {
 
@@ -70,19 +104,27 @@ async function buscarFotosDaPasta(folderId) {
 
     if (pageToken) {
 
-      url += `&pageToken=${encodeURIComponent(pageToken)}`;
+      url +=
+        `&pageToken=${encodeURIComponent(pageToken)}`;
 
     }
 
 
-    const resposta = await fetch(url);
+    const resposta =
+      await fetch(url);
 
 
     if (!resposta.ok) {
 
-      const erro = await resposta.json();
+      const erro =
+        await resposta.json();
 
-      console.error(erro);
+
+      console.error(
+        "Erro Google Drive:",
+        erro
+      );
+
 
       throw new Error(
         erro?.error?.message ||
@@ -92,18 +134,23 @@ async function buscarFotosDaPasta(folderId) {
     }
 
 
-    const dados = await resposta.json();
+    const dados =
+      await resposta.json();
 
 
-    const imagens = (dados.files || []).filter((arquivo) =>
-      arquivo.mimeType?.startsWith("image/")
-    );
+    const imagens =
+      (dados.files || []).filter(
+        (arquivo) =>
+          arquivo.mimeType?.startsWith("image/")
+      );
 
 
-    fotos = fotos.concat(imagens);
+    fotos =
+      fotos.concat(imagens);
 
 
-    pageToken = dados.nextPageToken || "";
+    pageToken =
+      dados.nextPageToken || "";
 
 
   } while (pageToken);
@@ -114,66 +161,100 @@ async function buscarFotosDaPasta(folderId) {
 }
 
 
+// ======================================================
+// CRIAR URL DA MINIATURA
+// ======================================================
 
-function criarUrlMiniatura(id) {
+function criarUrlMiniatura(id, tamanho = 500) {
 
-  return `https://drive.google.com/thumbnail?id=${id}&sz=w500`;
+  return (
+    `https://drive.google.com/thumbnail` +
+    `?id=${id}&sz=w${tamanho}`
+  );
 
 }
 
 
+// ======================================================
+// MOSTRAR FOTOS NA GALERIA
+// ======================================================
 
 function mostrarMaisFotos() {
 
-  const inicio = quantidadeExibida;
-
-  const fim = Math.min(
-    quantidadeExibida + FOTOS_POR_PAGINA,
-    todasAsFotos.length
-  );
+  const inicio =
+    quantidadeExibida;
 
 
-  for (let i = inicio; i < fim; i++) {
-
-    const foto = todasAsFotos[i];
-
-
-    const card = document.createElement("div");
-
-    card.className = "foto-card";
+  const fim =
+    Math.min(
+      quantidadeExibida + FOTOS_POR_PAGINA,
+      todasAsFotos.length
+    );
 
 
-    const imagem = document.createElement("img");
+  for (
+    let i = inicio;
+    i < fim;
+    i++
+  ) {
 
-    imagem.src = criarUrlMiniatura(foto.id);
+    const foto =
+      todasAsFotos[i];
 
-    imagem.alt = foto.name;
 
-    imagem.loading = "lazy";
+    const card =
+      document.createElement("div");
+
+    card.className =
+      "foto-card";
+
+
+    const imagem =
+      document.createElement("img");
+
+    imagem.src =
+      criarUrlMiniatura(
+        foto.id,
+        500
+      );
+
+    imagem.alt =
+      foto.name;
+
+    imagem.loading =
+      "lazy";
 
 
     imagem.onerror = () => {
 
-      imagem.style.opacity = "0.25";
+      imagem.style.opacity =
+        "0.25";
 
     };
 
 
-    const info = document.createElement("div");
+    const info =
+      document.createElement("div");
 
-    info.className = "foto-info";
-
-
-    const nome = document.createElement("div");
-
-    nome.className = "foto-nome";
-
-    nome.textContent = foto.name;
+    info.className =
+      "foto-info";
 
 
-    const numero = document.createElement("div");
+    const nome =
+      document.createElement("div");
 
-    numero.className = "foto-numero";
+    nome.className =
+      "foto-nome";
+
+    nome.textContent =
+      foto.name;
+
+
+    const numero =
+      document.createElement("div");
+
+    numero.className =
+      "foto-numero";
 
     numero.textContent =
       `Foto ${i + 1} de ${todasAsFotos.length}`;
@@ -194,27 +275,44 @@ function mostrarMaisFotos() {
   }
 
 
-  quantidadeExibida = fim;
+  quantidadeExibida =
+    fim;
 
 
-  if (quantidadeExibida < todasAsFotos.length) {
+  if (
+    quantidadeExibida <
+    todasAsFotos.length
+  ) {
 
-    btnCarregarMais.classList.remove("oculto");
+    btnCarregarMais
+      .classList
+      .remove("oculto");
+
 
     btnCarregarMais.textContent =
-      `Mostrar mais (${todasAsFotos.length - quantidadeExibida} restantes)`;
+      `Mostrar mais (` +
+      `${todasAsFotos.length - quantidadeExibida} restantes)`;
+
 
   } else {
 
-    btnCarregarMais.classList.add("oculto");
+    btnCarregarMais
+      .classList
+      .add("oculto");
 
   }
 
 }
 
 
+// ======================================================
+// SALVAR INFORMAÇÕES DA PASTA LOCALMENTE
+// ======================================================
 
-function salvarProjetoLocal(folderId, link) {
+function salvarProjetoLocal(
+  folderId,
+  link
+) {
 
   const projeto = {
 
@@ -222,25 +320,34 @@ function salvarProjetoLocal(folderId, link) {
 
     link,
 
-    total: todasAsFotos.length,
+    total:
+      todasAsFotos.length,
 
-    fotos: todasAsFotos.map((foto) => ({
+    fotos:
+      todasAsFotos.map(
+        (foto) => ({
 
-      id: foto.id,
+          id:
+            foto.id,
 
-      name: foto.name,
+          name:
+            foto.name,
 
-      mimeType: foto.mimeType,
+          mimeType:
+            foto.mimeType,
 
-      webViewLink: foto.webViewLink || ""
+          webViewLink:
+            foto.webViewLink || ""
 
-    })),
+        })
+      ),
 
     analisadas: 0,
 
     finalistas: 0,
 
-    dataConexao: new Date().toISOString()
+    dataConexao:
+      new Date().toISOString()
 
   };
 
@@ -261,7 +368,7 @@ function salvarProjetoLocal(folderId, link) {
   } catch (erro) {
 
     console.warn(
-      "Não foi possível salvar todas as informações localmente.",
+      "Não foi possível salvar o projeto localmente.",
       erro
     );
 
@@ -270,35 +377,234 @@ function salvarProjetoLocal(folderId, link) {
 }
 
 
+// ======================================================
+// ATUALIZAR PAINEL
+// ======================================================
 
 function atualizarPainelInicial(total) {
 
-  totalFotos.textContent = total;
+  totalFotos.textContent =
+    total;
 
-  analisadas.textContent = "0";
 
-  restantes.textContent = total;
+  analisadas.textContent =
+    "0";
 
-  finalistas.textContent = "0";
+
+  restantes.textContent =
+    total;
+
+
+  finalistas.textContent =
+    "0";
 
 
   progresso.textContent =
     `0 / ${total} fotos`;
 
 
-  porcentagem.textContent = "0%";
+  porcentagem.textContent =
+    "0%";
 
-  barra.style.width = "0%";
+
+  barra.style.width =
+    "0%";
 
 }
 
 
+// ======================================================
+// TRANSFORMAR IMAGEM EM BASE64
+// ======================================================
+
+async function imagemParaBase64(url) {
+
+  const resposta =
+    await fetch(url);
+
+
+  if (!resposta.ok) {
+
+    throw new Error(
+      "Não foi possível baixar a imagem para análise."
+    );
+
+  }
+
+
+  const blob =
+    await resposta.blob();
+
+
+  return new Promise(
+    (resolve, reject) => {
+
+      const reader =
+        new FileReader();
+
+
+      reader.onloadend = () => {
+
+        const resultado =
+          reader.result;
+
+
+        const base64 =
+          resultado.split(",")[1];
+
+
+        resolve({
+
+          base64,
+
+          mimeType:
+            blob.type ||
+            "image/jpeg"
+
+        });
+
+      };
+
+
+      reader.onerror = () => {
+
+        reject(
+          new Error(
+            "Erro ao converter a fotografia."
+          )
+        );
+
+      };
+
+
+      reader.readAsDataURL(blob);
+
+    }
+  );
+
+}
+
+
+// ======================================================
+// ENVIAR UMA FOTO PARA O GEMINI
+// ======================================================
+
+async function analisarUmaFoto(foto) {
+
+  // Usamos uma versão de 1600px para a análise.
+  // É muito melhor que a miniatura pequena da galeria,
+  // mas evita enviar o arquivo original gigantesco.
+
+  const urlImagem =
+    criarUrlMiniatura(
+      foto.id,
+      1600
+    );
+
+
+  console.log(
+    "Preparando fotografia:",
+    foto.name
+  );
+
+
+  const imagem =
+    await imagemParaBase64(
+      urlImagem
+    );
+
+
+  console.log(
+    "Enviando fotografia para a IA..."
+  );
+
+
+  const resposta =
+    await fetch(
+      WORKER_URL,
+      {
+
+        method:
+          "POST",
+
+        headers: {
+
+          "Content-Type":
+            "application/json"
+
+        },
+
+        body:
+          JSON.stringify({
+
+            imageBase64:
+              imagem.base64,
+
+            mimeType:
+              imagem.mimeType,
+
+            fileName:
+              foto.name
+
+          })
+
+      }
+    );
+
+
+  let resultado;
+
+
+  try {
+
+    resultado =
+      await resposta.json();
+
+  } catch {
+
+    throw new Error(
+      "O servidor respondeu em um formato inesperado."
+    );
+
+  }
+
+
+  if (!resposta.ok) {
+
+    console.error(
+      "Erro retornado pelo Worker:",
+      resultado
+    );
+
+
+    const detalheGemini =
+      resultado?.detalhes?.error?.message;
+
+
+    throw new Error(
+      detalheGemini ||
+      resultado?.erro ||
+      "Erro durante a análise da fotografia."
+    );
+
+  }
+
+
+  return resultado;
+
+}
+
+
+// ======================================================
+// CONECTAR PASTA
+// ======================================================
 
 btnConectar.addEventListener(
   "click",
   async () => {
 
-    const link = driveLink.value.trim();
+    const link =
+      driveLink.value.trim();
 
 
     if (!link) {
@@ -327,7 +633,9 @@ btnConectar.addEventListener(
     }
 
 
-    btnConectar.disabled = true;
+    btnConectar.disabled =
+      true;
+
 
     btnConectar.textContent =
       "Buscando fotos...";
@@ -337,15 +645,20 @@ btnConectar.addEventListener(
       "Conectando ao Google Drive...";
 
 
-    galeria.innerHTML = "";
+    galeria.innerHTML =
+      "";
 
-    quantidadeExibida = 0;
+
+    quantidadeExibida =
+      0;
 
 
     try {
 
       todasAsFotos =
-        await buscarFotosDaPasta(folderId);
+        await buscarFotosDaPasta(
+          folderId
+        );
 
 
       if (
@@ -366,14 +679,16 @@ btnConectar.addEventListener(
 
 
       statusPasta.textContent =
-        `✓ Pasta conectada — ${todasAsFotos.length} fotografias encontradas.`;
+        `✓ Pasta conectada — ` +
+        `${todasAsFotos.length} fotografias encontradas.`;
 
 
       infoGaleria.textContent =
         `${todasAsFotos.length} fotografias disponíveis para análise.`;
 
 
-      btnIniciar.disabled = false;
+      btnIniciar.disabled =
+        false;
 
 
       salvarProjetoLocal(
@@ -393,7 +708,9 @@ btnConectar.addEventListener(
 
     } catch (erro) {
 
-      console.error(erro);
+      console.error(
+        erro
+      );
 
 
       statusPasta.textContent =
@@ -408,7 +725,9 @@ btnConectar.addEventListener(
 
     } finally {
 
-      btnConectar.disabled = false;
+      btnConectar.disabled =
+        false;
+
 
       btnConectar.textContent =
         "Conectar pasta";
@@ -419,6 +738,9 @@ btnConectar.addEventListener(
 );
 
 
+// ======================================================
+// MOSTRAR MAIS FOTOS
+// ======================================================
 
 btnCarregarMais.addEventListener(
   "click",
@@ -426,14 +748,212 @@ btnCarregarMais.addEventListener(
 );
 
 
+// ======================================================
+// PRIMEIRO TESTE DA IA
+// ======================================================
 
 btnIniciar.addEventListener(
+  "click",
+  async () => {
+
+    if (
+      todasAsFotos.length === 0
+    ) {
+
+      alert(
+        "Conecte primeiro a pasta do Google Drive."
+      );
+
+      return;
+
+    }
+
+
+    // IMPORTANTE:
+    // Por enquanto analisaremos SOMENTE A PRIMEIRA FOTO.
+
+    const fotoTeste =
+      todasAsFotos[0];
+
+
+    btnIniciar.disabled =
+      true;
+
+
+    btnIniciar.textContent =
+      "IA analisando...";
+
+
+    btnConectar.disabled =
+      true;
+
+
+    statusPasta.textContent =
+      `🤖 Analisando ${fotoTeste.name}...`;
+
+
+    progresso.textContent =
+      `Testando IA com ${fotoTeste.name}`;
+
+
+    try {
+
+      const resultado =
+        await analisarUmaFoto(
+          fotoTeste
+        );
+
+
+      console.log(
+        "================================="
+      );
+
+      console.log(
+        "ANÁLISE DA PRIMEIRA FOTO"
+      );
+
+      console.log(
+        resultado
+      );
+
+      console.log(
+        "================================="
+      );
+
+
+      statusPasta.textContent =
+        `✓ ${fotoTeste.name} analisada pela IA.`;
+
+
+      // Atualiza a barra apenas como demonstração
+      // de que UMA fotografia foi analisada.
+
+      analisadas.textContent =
+        "1";
+
+
+      restantes.textContent =
+        todasAsFotos.length - 1;
+
+
+      progresso.textContent =
+        `1 / ${todasAsFotos.length} fotos`;
+
+
+      const percentual =
+        (
+          1 /
+          todasAsFotos.length *
+          100
+        );
+
+
+      porcentagem.textContent =
+        `${percentual.toFixed(2)}%`;
+
+
+      barra.style.width =
+        `${percentual}%`;
+
+
+      // Mostra um resumo da análise
+
+      alert(
+        `ANÁLISE CONCLUÍDA!\n\n` +
+
+        `Arquivo:\n` +
+        `${resultado.arquivo || fotoTeste.name}\n\n` +
+
+        `🎨 Composição: ` +
+        `${resultado.composicao ?? "-"}\n` +
+
+        `💡 Iluminação: ` +
+        `${resultado.iluminacao ?? "-"}\n` +
+
+        `📷 Nitidez: ` +
+        `${resultado.nitidez ?? "-"}\n\n` +
+
+        `👰 Noiva favorecida: ` +
+        `${resultado.favorecimento_noiva ?? "-"}\n` +
+
+        `🤵 Noivo favorecido: ` +
+        `${resultado.favorecimento_noivo ?? "-"}\n\n` +
+
+        `😊 Expressão geral: ` +
+        `${resultado.sorriso_expressao_geral ?? "-"}\n` +
+
+        `💑 Conexão: ` +
+        `${resultado.conexao_casal ?? "-"}\n` +
+
+        `❤️ Romantismo: ` +
+        `${resultado.romantismo ?? "-"}\n` +
+
+        `📸 Espontaneidade: ` +
+        `${resultado.espontaneidade ?? "-"}\n\n` +
+
+        `🌅 Cenário: ` +
+        `${resultado.aproveitamento_cenario ?? "-"}\n` +
+
+        `📱 Instagram: ` +
+        `${resultado.instagram ?? "-"}\n` +
+
+        `🌐 Site/Convite: ` +
+        `${resultado.site_convite ?? "-"}`
+      );
+
+
+    } catch (erro) {
+
+      console.error(
+        "ERRO NO TESTE DA IA:",
+        erro
+      );
+
+
+      statusPasta.textContent =
+        "❌ Erro durante o teste da IA.";
+
+
+      progresso.textContent =
+        `0 / ${todasAsFotos.length} fotos`;
+
+
+      alert(
+        "A análise com IA não funcionou.\n\n" +
+        erro.message +
+        "\n\nNão tente iniciar as 1.315 fotos."
+      );
+
+
+    } finally {
+
+      btnIniciar.disabled =
+        false;
+
+
+      btnIniciar.textContent =
+        "Iniciar análise";
+
+
+      btnConectar.disabled =
+        false;
+
+    }
+
+  }
+);
+
+
+// ======================================================
+// BOTÃO PAUSAR
+// ======================================================
+
+btnPausar.addEventListener(
   "click",
   () => {
 
     alert(
-      "As fotografias estão prontas.\n\n" +
-      "A integração com a IA será adicionada na próxima etapa."
+      "O sistema de pausa será ativado quando liberarmos a análise em lote."
     );
 
   }
