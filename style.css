@@ -1,0 +1,115 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: Arial, sans-serif;
+  background: #111;
+  color: #fff;
+  min-height: 100vh;
+}
+
+.container {
+  width: min(900px, 92%);
+  margin: 0 auto;
+  padding: 70px 0;
+}
+
+h1 {
+  font-size: 2.4rem;
+  margin-bottom: 12px;
+}
+
+p {
+  color: #bbb;
+}
+
+.formulario {
+  display: flex;
+  gap: 12px;
+  margin-top: 35px;
+}
+
+input {
+  flex: 1;
+  padding: 16px;
+  border-radius: 10px;
+  border: 1px solid #444;
+  background: #1b1b1b;
+  color: white;
+  font-size: 1rem;
+}
+
+button {
+  padding: 16px 24px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.painel {
+  margin-top: 50px;
+  padding: 30px;
+  background: #1a1a1a;
+  border-radius: 16px;
+}
+
+.painel h2 {
+  margin-bottom: 25px;
+}
+
+.barra-container {
+  width: 100%;
+  height: 18px;
+  background: #333;
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.barra {
+  width: 0%;
+  height: 100%;
+  background: #fff;
+  transition: width 0.4s ease;
+}
+
+#progresso {
+  margin-top: 12px;
+}
+
+.status-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 15px;
+  margin-top: 30px;
+}
+
+.status-grid div {
+  background: #222;
+  padding: 20px;
+  border-radius: 12px;
+  text-align: center;
+}
+
+.status-grid strong {
+  display: block;
+  font-size: 1.8rem;
+  margin-bottom: 5px;
+}
+
+.status-grid span {
+  color: #aaa;
+}
+
+@media (max-width: 650px) {
+  .formulario {
+    flex-direction: column;
+  }
+
+  .status-grid {
+    grid-template-columns: 1fr;
+  }
+}

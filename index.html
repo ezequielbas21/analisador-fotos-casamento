@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Analisador de Fotos do Casamento</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <main class="container">
+    <h1>Analisador de Fotos do Casamento</h1>
+    <p>
+      Cole abaixo o link público da pasta do Google Drive.
+    </p>
+
+    <div class="formulario">
+      <input
+        type="url"
+        id="driveLink"
+        placeholder="https://drive.google.com/drive/folders/..."
+      >
+
+      <button id="btnConectar">
+        Conectar pasta
+      </button>
+    </div>
+
+    <section class="painel" id="painel">
+      <h2>Análise</h2>
+
+      <div class="barra-container">
+        <div class="barra" id="barra"></div>
+      </div>
+
+      <p id="progresso">0 / 0 fotos</p>
+
+      <div class="status-grid">
+        <div>
+          <strong id="analisadas">0</strong>
+          <span>Analisadas</span>
+        </div>
+
+        <div>
+          <strong id="restantes">0</strong>
+          <span>Restantes</span>
+        </div>
+
+        <div>
+          <strong id="finalistas">0</strong>
+          <span>Finalistas</span>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
