@@ -488,34 +488,11 @@ async function imagemParaBase64(url) {
 // ======================================================
 // ENVIAR UMA FOTO PARA O GEMINI
 // ======================================================
-
 async function analisarUmaFoto(foto) {
 
-  // Usamos uma versão de 1600px para a análise.
-  // É muito melhor que a miniatura pequena da galeria,
-  // mas evita enviar o arquivo original gigantesco.
-
-  const urlImagem =
-    criarUrlMiniatura(
-      foto.id,
-      1600
-    );
-
-
   console.log(
-    "Preparando fotografia:",
+    "Enviando fotografia para análise:",
     foto.name
-  );
-
-
-  const imagem =
-    await imagemParaBase64(
-      urlImagem
-    );
-
-
-  console.log(
-    "Enviando fotografia para a IA..."
   );
 
 
@@ -537,11 +514,8 @@ async function analisarUmaFoto(foto) {
         body:
           JSON.stringify({
 
-            imageBase64:
-              imagem.base64,
-
-            mimeType:
-              imagem.mimeType,
+            driveFileId:
+              foto.id,
 
             fileName:
               foto.name
@@ -578,7 +552,10 @@ async function analisarUmaFoto(foto) {
 
 
     const detalheGemini =
-      resultado?.detalhes?.error?.message;
+      resultado
+        ?.detalhes
+        ?.error
+        ?.message;
 
 
     throw new Error(
