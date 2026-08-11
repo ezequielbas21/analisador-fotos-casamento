@@ -12,7 +12,7 @@ body {
 }
 
 .container {
-  width: min(1100px, 92%);
+  width: min(1150px, 92%);
   margin: auto;
   padding: 60px 0 100px;
 }
@@ -27,7 +27,11 @@ h1 {
 }
 
 h2 {
-  margin-bottom: 8px;
+  margin-bottom: 10px;
+}
+
+h3 {
+  margin-bottom: 10px;
 }
 
 p {
@@ -36,34 +40,53 @@ p {
 }
 
 
-/* CONEXÃO */
+/* =========================================
+   BLOCOS
+========================================= */
 
-.conexao {
-  margin-bottom: 35px;
+.bloco {
+  background: #191919;
+  padding: 28px;
+  border-radius: 18px;
+  margin-bottom: 25px;
 }
 
-.formulario {
+
+/* =========================================
+   INPUTS / BOTÕES
+========================================= */
+
+.linha {
   display: flex;
   gap: 12px;
+  margin-top: 20px;
+  margin-bottom: 12px;
 }
 
 input {
   flex: 1;
-  padding: 16px;
+  padding: 15px;
   border-radius: 10px;
   border: 1px solid #444;
-  background: #1a1a1a;
+  background: #222;
   color: white;
   font-size: 1rem;
 }
 
+input:focus {
+  outline: 1px solid #888;
+}
+
 button {
-  padding: 15px 24px;
-  border: none;
+  padding: 14px 22px;
+  border: 0;
   border-radius: 10px;
   cursor: pointer;
   font-weight: bold;
-  font-size: 0.95rem;
+}
+
+button:hover:not(:disabled) {
+  opacity: 0.85;
 }
 
 button:disabled {
@@ -71,37 +94,28 @@ button:disabled {
   cursor: not-allowed;
 }
 
-.status-pasta {
-  margin-top: 12px;
-}
 
+/* =========================================
+   PROGRESSO
+========================================= */
 
-/* PAINEL */
-
-.painel {
-  background: #191919;
-  padding: 30px;
-  border-radius: 18px;
-}
-
-.painel-topo {
+.topo-progresso {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 22px;
 }
 
 #porcentagem {
   font-size: 1.8rem;
-  font-weight: bold;
 }
 
 .barra-container {
   width: 100%;
   height: 20px;
   background: #333;
-  border-radius: 50px;
+  border-radius: 30px;
   overflow: hidden;
+  margin-top: 20px;
 }
 
 .barra {
@@ -112,26 +126,27 @@ button:disabled {
 }
 
 
-/* CARDS */
+/* =========================================
+   STATUS
+========================================= */
 
 .status-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 15px;
+  gap: 14px;
   margin-top: 25px;
 }
 
 .card-status {
   background: #222;
-  border-radius: 12px;
   padding: 20px;
+  border-radius: 12px;
   text-align: center;
 }
 
 .card-status strong {
-  font-size: 1.8rem;
   display: block;
-  margin-bottom: 6px;
+  font-size: 1.8rem;
 }
 
 .card-status span {
@@ -139,43 +154,98 @@ button:disabled {
 }
 
 
-/* BOTÕES */
+/* =========================================
+   BUSCA
+========================================= */
 
-.acoes {
-  display: flex;
-  gap: 10px;
+.resultado-busca {
   margin-top: 25px;
 }
 
-
-/* GALERIA */
-
-.fotos-section {
-  margin-top: 50px;
+.busca-card {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 25px;
+  background: #222;
+  padding: 20px;
+  border-radius: 14px;
 }
 
-.titulo-galeria {
-  margin-bottom: 20px;
+.busca-card img {
+  width: 100%;
+  border-radius: 10px;
+}
+
+.busca-info {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.busca-info button {
+  margin-top: 15px;
+  width: fit-content;
+}
+
+
+/* =========================================
+   ANÁLISE CONTÍNUA
+========================================= */
+
+.controles-analise {
+  display: flex;
+  gap: 14px;
+  margin-top: 20px;
+  align-items: flex-end;
+}
+
+.controles-analise div {
+  width: 130px;
+}
+
+.controles-analise label {
+  display: block;
+  color: #aaa;
+  margin-bottom: 7px;
+}
+
+.controles-analise input {
+  width: 100%;
+}
+
+.status-analise {
+  margin-top: 20px;
+}
+
+
+/* =========================================
+   GALERIA
+========================================= */
+
+.fotos-section {
+  margin-top: 45px;
+  margin-bottom: 45px;
 }
 
 .galeria {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 14px;
+  margin-top: 20px;
 }
 
 .foto-card {
+  position: relative;
   background: #1b1b1b;
   border-radius: 12px;
   overflow: hidden;
 }
 
 .foto-card img {
+  display: block;
   width: 100%;
   aspect-ratio: 4 / 3;
   object-fit: cover;
-  display: block;
-  background: #252525;
 }
 
 .foto-info {
@@ -183,54 +253,92 @@ button:disabled {
 }
 
 .foto-nome {
-  font-size: 0.8rem;
-  white-space: nowrap;
   overflow: hidden;
+  white-space: nowrap;
   text-overflow: ellipsis;
-  color: #ddd;
 }
 
 .foto-numero {
-  font-size: 0.72rem;
   color: #777;
-  margin-top: 4px;
+  font-size: 0.75rem;
+  margin-top: 5px;
+}
+
+.badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+
+  padding: 5px 8px;
+  border-radius: 20px;
+
+  background: rgba(0, 0, 0, 0.75);
+
+  font-size: 0.7rem;
 }
 
 .carregar-mais {
   display: block;
-  margin: 25px auto 0;
+  margin: 25px auto;
 }
+
+
+/* =========================================
+   RANKING
+========================================= */
+
+.ranking-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-top: 22px;
+}
+
+.ranking-item {
+  padding: 16px;
+  background: #222;
+  border-radius: 10px;
+}
+
+.ranking-item strong {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.ranking-item span {
+  color: #aaa;
+}
+
+
+/* =========================================
+   RESULTADOS
+========================================= */
+
+.resultado-item {
+  background: #222;
+  padding: 18px;
+  border-radius: 12px;
+  margin-top: 14px;
+}
+
+.resultado-notas {
+  margin-top: 10px;
+  color: #aaa;
+}
+
+
+/* =========================================
+   UTILIDADES
+========================================= */
 
 .oculto {
   display: none;
 }
 
 
-/* RANKINGS */
-
-.ranking-preview {
-  margin-top: 60px;
-  background: #191919;
-  padding: 30px;
-  border-radius: 18px;
-}
-
-.ranking-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
-  margin-top: 25px;
-}
-
-.ranking-grid div {
-  padding: 15px;
-  background: #222;
-  border-radius: 10px;
-  color: #aaa;
-}
-
-
-/* RESPONSIVO */
+/* =========================================
+   MOBILE
+========================================= */
 
 @media (max-width: 800px) {
 
@@ -242,11 +350,16 @@ button:disabled {
     grid-template-columns: repeat(2, 1fr);
   }
 
+  .ranking-grid {
+    grid-template-columns: 1fr;
+  }
+
 }
+
 
 @media (max-width: 600px) {
 
-  .formulario {
+  .linha {
     flex-direction: column;
   }
 
@@ -254,8 +367,17 @@ button:disabled {
     grid-template-columns: repeat(2, 1fr);
   }
 
-  .ranking-grid {
+  .busca-card {
     grid-template-columns: 1fr;
+  }
+
+  .controles-analise {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .controles-analise div {
+    width: 100%;
   }
 
 }

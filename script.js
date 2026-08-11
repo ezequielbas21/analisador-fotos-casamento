@@ -1,57 +1,91 @@
 // ======================================================
-// ANALISADOR DE FOTOS DO CASAMENTO
-// Google Drive + Cloudflare Worker + Gemini
-// TESTE CONTROLADO: FOTOS 2, 3, 4 e 5
-// ======================================================
-
-
-// ======================================================
-// ELEMENTOS DA PÁGINA
-// ======================================================
-
-const btnConectar = document.getElementById("btnConectar");
-const btnIniciar = document.getElementById("btnIniciar");
-const btnPausar = document.getElementById("btnPausar");
-const btnCarregarMais = document.getElementById("btnCarregarMais");
-
-const driveLink = document.getElementById("driveLink");
-
-const progresso = document.getElementById("progresso");
-const porcentagem = document.getElementById("porcentagem");
-const barra = document.getElementById("barra");
-
-const totalFotos = document.getElementById("totalFotos");
-const analisadas = document.getElementById("analisadas");
-const restantes = document.getElementById("restantes");
-const finalistas = document.getElementById("finalistas");
-
-const statusPasta = document.getElementById("statusPasta");
-const infoGaleria = document.getElementById("infoGaleria");
-const galeria = document.getElementById("galeria");
-
-
-// ======================================================
 // CONFIGURAÇÕES
 // ======================================================
 
-// COLE AQUI SUA CHAVE DA GOOGLE DRIVE API
+// COLE SUA CHAVE DO GOOGLE DRIVE ENTRE AS ASPAS
 const API_KEY = "AIzaSyAPl2tgM9c07P0FtM9saMMvWa8vi_rzR08";
 
-// Cloudflare Worker
 const WORKER_URL =
   "https://analisador-fotos-api.ezequielsilva2614.workers.dev/";
 
-// Fotos exibidas por página
 const FOTOS_POR_PAGINA = 24;
 
-// A foto de índice 0 foi a primeira já analisada.
-// Agora vamos analisar índices 1, 2, 3 e 4.
-const INDICE_INICIAL_TESTE = 1;
-const QUANTIDADE_NOVAS_TESTE = 4;
+// 6 segundos de intervalo entre análises automáticas.
+const INTERVALO_ANALISE = 6000;
 
-// Intervalo entre chamadas à IA.
-// Deixamos folga para não ficar encostando no limite.
-const INTERVALO_ENTRE_ANALISES = 6000;
+
+// ======================================================
+// ELEMENTOS
+// ======================================================
+
+const btnConectar =
+  document.getElementById("btnConectar");
+
+const btnBuscar =
+  document.getElementById("btnBuscar");
+
+const btnContinuar =
+  document.getElementById("btnContinuar");
+
+const btnPausar =
+  document.getElementById("btnPausar");
+
+const btnCarregarMais =
+  document.getElementById("btnCarregarMais");
+
+
+const driveLink =
+  document.getElementById("driveLink");
+
+const buscaFoto =
+  document.getElementById("buscaFoto");
+
+const quantidadeAnalise =
+  document.getElementById("quantidadeAnalise");
+
+
+const totalFotos =
+  document.getElementById("totalFotos");
+
+const analisadas =
+  document.getElementById("analisadas");
+
+const restantes =
+  document.getElementById("restantes");
+
+const finalistas =
+  document.getElementById("finalistas");
+
+const progresso =
+  document.getElementById("progresso");
+
+const porcentagem =
+  document.getElementById("porcentagem");
+
+const barra =
+  document.getElementById("barra");
+
+
+const statusPasta =
+  document.getElementById("statusPasta");
+
+const statusAnalise =
+  document.getElementById("statusAnalise");
+
+const infoGaleria =
+  document.getElementById("infoGaleria");
+
+const galeria =
+  document.getElementById("galeria");
+
+const resultadoBusca =
+  document.getElementById("resultadoBusca");
+
+const rankingGrid =
+  document.getElementById("rankingGrid");
+
+const resultadosAnalise =
+  document.getElementById("resultadosAnalise");
 
 
 // ======================================================
@@ -59,9 +93,12 @@ const INTERVALO_ENTRE_ANALISES = 6000;
 // ======================================================
 
 let todasAsFotos = [];
+
 let quantidadeExibida = 0;
-let analisePausada = false;
+
 let analiseEmAndamento = false;
+
+let pausaSolicitada = false;
 
 
 // ======================================================
@@ -69,26 +106,153 @@ let analiseEmAndamento = false;
 // ======================================================
 
 function esperar(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise(resolve =>
+    setTimeout(resolve, ms)
+  );
 }
 
 
 function extrairIdPasta(link) {
-  const match = link.match(/\/folders\/([a-zA-Z0-9_-]+)/);
 
-  if (!match) {
-    return null;
-  }
+  const match =
+    link.match(
+      /\/folders\/([a-zA-Z0-9_-]+)/
+    );
 
-  return match[1];
+  return match
+    ? match[1]
+    : null;
 }
 
 
-function criarUrlMiniatura(id, tamanho = 500) {
+function criarUrlMiniatura(
+  id,
+  tamanho = 500
+) {
+
   return (
     `https://drive.google.com/thumbnail` +
-    `?id=${id}&sz=w${tamanho}`
+    `?id=${id}` +
+    `&sz=w${tamanho}`
   );
+
+}
+
+
+// ======================================================
+// RESULTADOS SALVOS
+// ======================================================
+
+function carregarResultados() {
+
+  try {
+
+    const salvo =
+      localStorage.getItem(
+        "resultadosAnaliseCasamento"
+      );
+
+
+    if (!salvo) {
+      return [];
+    }
+
+
+    const dados =
+      JSON.parse(salvo);
+
+
+    return Array.isArray(dados)
+      ? dados
+      : [];
+
+  } catch {
+
+    return [];
+
+  }
+
+}
+
+
+function salvarResultados(
+  resultados
+) {
+
+  localStorage.setItem(
+    "resultadosAnaliseCasamento",
+    JSON.stringify(resultados)
+  );
+
+}
+
+
+function fotoJaAnalisada(id) {
+
+  return carregarResultados()
+    .some(
+      registro =>
+        registro.id === id
+    );
+
+}
+
+
+function salvarResultado(
+  foto,
+  resultado
+) {
+
+  const resultados =
+    carregarResultados();
+
+
+  const indiceExistente =
+    resultados.findIndex(
+      item => item.id === foto.id
+    );
+
+
+  const registro = {
+
+    id:
+      foto.id,
+
+    arquivo:
+      foto.name,
+
+    indice:
+      todasAsFotos.findIndex(
+        item =>
+          item.id === foto.id
+      ),
+
+    dataAnalise:
+      new Date().toISOString(),
+
+    resultado
+
+  };
+
+
+  if (indiceExistente >= 0) {
+
+    resultados[indiceExistente] =
+      registro;
+
+  } else {
+
+    resultados.push(
+      registro
+    );
+
+  }
+
+
+  salvarResultados(
+    resultados
+  );
+
 }
 
 
@@ -96,14 +260,22 @@ function criarUrlMiniatura(id, tamanho = 500) {
 // GOOGLE DRIVE
 // ======================================================
 
-async function buscarFotosDaPasta(folderId) {
+async function buscarFotosDaPasta(
+  folderId
+) {
+
   let fotos = [];
+
   let pageToken = "";
 
+
   do {
-    const query = encodeURIComponent(
-      `'${folderId}' in parents and trashed = false`
-    );
+
+    const query =
+      encodeURIComponent(
+        `'${folderId}' in parents and trashed = false`
+      );
+
 
     let url =
       `https://www.googleapis.com/drive/v3/files` +
@@ -113,276 +285,61 @@ async function buscarFotosDaPasta(folderId) {
       `&orderBy=name` +
       `&key=${API_KEY}`;
 
+
     if (pageToken) {
-      url += `&pageToken=${encodeURIComponent(pageToken)}`;
+
+      url +=
+        `&pageToken=${encodeURIComponent(pageToken)}`;
+
     }
 
-    const resposta = await fetch(url);
+
+    const resposta =
+      await fetch(url);
+
 
     if (!resposta.ok) {
-      const erro = await resposta.json();
 
-      console.error("Erro Google Drive:", erro);
+      const erro =
+        await resposta.json();
+
 
       throw new Error(
         erro?.error?.message ||
         "Erro ao acessar o Google Drive."
       );
+
     }
 
-    const dados = await resposta.json();
 
-    const imagens = (dados.files || []).filter(
-      arquivo => arquivo.mimeType?.startsWith("image/")
-    );
+    const dados =
+      await resposta.json();
 
-    fotos = fotos.concat(imagens);
 
-    pageToken = dados.nextPageToken || "";
+    const imagens =
+      (dados.files || [])
+        .filter(
+          arquivo =>
+            arquivo.mimeType
+              ?.startsWith("image/")
+        );
+
+
+    fotos =
+      fotos.concat(
+        imagens
+      );
+
+
+    pageToken =
+      dados.nextPageToken || "";
+
 
   } while (pageToken);
 
+
   return fotos;
-}
 
-
-// ======================================================
-// GALERIA
-// ======================================================
-
-function mostrarMaisFotos() {
-  const inicio = quantidadeExibida;
-
-  const fim = Math.min(
-    quantidadeExibida + FOTOS_POR_PAGINA,
-    todasAsFotos.length
-  );
-
-  for (let i = inicio; i < fim; i++) {
-    const foto = todasAsFotos[i];
-
-    const card = document.createElement("div");
-    card.className = "foto-card";
-
-    const imagem = document.createElement("img");
-
-    imagem.src = criarUrlMiniatura(foto.id, 500);
-    imagem.alt = foto.name;
-    imagem.loading = "lazy";
-
-    imagem.onerror = () => {
-      imagem.style.opacity = "0.25";
-    };
-
-    const info = document.createElement("div");
-    info.className = "foto-info";
-
-    const nome = document.createElement("div");
-    nome.className = "foto-nome";
-    nome.textContent = foto.name;
-
-    const numero = document.createElement("div");
-    numero.className = "foto-numero";
-    numero.textContent =
-      `Foto ${i + 1} de ${todasAsFotos.length}`;
-
-    info.appendChild(nome);
-    info.appendChild(numero);
-
-    card.appendChild(imagem);
-    card.appendChild(info);
-
-    galeria.appendChild(card);
-  }
-
-  quantidadeExibida = fim;
-
-  if (quantidadeExibida < todasAsFotos.length) {
-    btnCarregarMais.classList.remove("oculto");
-
-    btnCarregarMais.textContent =
-      `Mostrar mais (` +
-      `${todasAsFotos.length - quantidadeExibida} restantes)`;
-  } else {
-    btnCarregarMais.classList.add("oculto");
-  }
-}
-
-
-// ======================================================
-// SALVAMENTO
-// ======================================================
-
-function carregarResultadosSalvos() {
-  try {
-    const salvo = localStorage.getItem(
-      "resultadosAnaliseCasamento"
-    );
-
-    if (!salvo) {
-      return [];
-    }
-
-    const resultados = JSON.parse(salvo);
-
-    return Array.isArray(resultados)
-      ? resultados
-      : [];
-
-  } catch (erro) {
-    console.warn(
-      "Erro ao carregar resultados salvos:",
-      erro
-    );
-
-    return [];
-  }
-}
-
-
-function salvarResultados(resultados) {
-  localStorage.setItem(
-    "resultadosAnaliseCasamento",
-    JSON.stringify(resultados)
-  );
-}
-
-
-function salvarResultadoIndividual(foto, resultado) {
-  const resultados = carregarResultadosSalvos();
-
-  const registro = {
-    id: foto.id,
-    arquivo: foto.name,
-    indice: todasAsFotos.findIndex(
-      item => item.id === foto.id
-    ),
-    dataAnalise: new Date().toISOString(),
-    resultado
-  };
-
-  const indiceExistente = resultados.findIndex(
-    item => item.id === foto.id
-  );
-
-  if (indiceExistente >= 0) {
-    resultados[indiceExistente] = registro;
-  } else {
-    resultados.push(registro);
-  }
-
-  salvarResultados(resultados);
-
-  console.log(
-    "✓ Resultado salvo:",
-    foto.name
-  );
-
-  return resultados;
-}
-
-
-function salvarProjetoLocal(folderId, link) {
-  const projeto = {
-    folderId,
-    link,
-    total: todasAsFotos.length,
-
-    fotos: todasAsFotos.map(foto => ({
-      id: foto.id,
-      name: foto.name,
-      mimeType: foto.mimeType,
-      webViewLink: foto.webViewLink || ""
-    })),
-
-    dataConexao: new Date().toISOString()
-  };
-
-  try {
-    localStorage.setItem(
-      "projetoFotosCasamento",
-      JSON.stringify(projeto)
-    );
-  } catch (erro) {
-    console.warn(
-      "Não foi possível salvar o projeto.",
-      erro
-    );
-  }
-}
-
-
-// ======================================================
-// PAINEL
-// ======================================================
-
-function atualizarPainelInicial(total) {
-  const resultados =
-    carregarResultadosSalvos();
-
-  const quantidadeSalva =
-    resultados.length;
-
-  totalFotos.textContent =
-    total;
-
-  analisadas.textContent =
-    quantidadeSalva;
-
-  restantes.textContent =
-    Math.max(
-      total - quantidadeSalva,
-      0
-    );
-
-  finalistas.textContent =
-    "0";
-
-  progresso.textContent =
-    `${quantidadeSalva} / ${total} fotos`;
-
-  const percentual =
-    total > 0
-      ? quantidadeSalva / total * 100
-      : 0;
-
-  porcentagem.textContent =
-    `${percentual.toFixed(2)}%`;
-
-  barra.style.width =
-    `${percentual}%`;
-}
-
-
-function atualizarProgresso() {
-  const resultados =
-    carregarResultadosSalvos();
-
-  const quantidade =
-    resultados.length;
-
-  analisadas.textContent =
-    quantidade;
-
-  restantes.textContent =
-    Math.max(
-      todasAsFotos.length - quantidade,
-      0
-    );
-
-  progresso.textContent =
-    `${quantidade} / ${todasAsFotos.length} fotos`;
-
-  const percentual =
-    todasAsFotos.length > 0
-      ? quantidade / todasAsFotos.length * 100
-      : 0;
-
-  porcentagem.textContent =
-    `${percentual.toFixed(2)}%`;
-
-  barra.style.width =
-    `${percentual}%`;
 }
 
 
@@ -390,238 +347,1127 @@ function atualizarProgresso() {
 // IA
 // ======================================================
 
-async function analisarUmaFoto(foto) {
-  console.log(
-    "Enviando fotografia para análise:",
-    foto.name
-  );
+async function analisarUmaFoto(
+  foto
+) {
 
-  const resposta = await fetch(
-    WORKER_URL,
-    {
-      method: "POST",
+  const resposta =
+    await fetch(
+      WORKER_URL,
+      {
 
-      headers: {
-        "Content-Type": "application/json"
-      },
+        method:
+          "POST",
 
-      body: JSON.stringify({
-        driveFileId: foto.id,
-        fileName: foto.name
-      })
-    }
-  );
+        headers: {
 
-  let resultado;
+          "Content-Type":
+            "application/json"
 
-  try {
-    resultado = await resposta.json();
-  } catch {
-    throw new Error(
-      "O servidor respondeu em formato inesperado."
+        },
+
+        body:
+          JSON.stringify({
+
+            driveFileId:
+              foto.id,
+
+            fileName:
+              foto.name
+
+          })
+
+      }
     );
-  }
+
+
+  const resultado =
+    await resposta.json();
+
 
   if (!resposta.ok) {
-    console.error(
-      "Erro retornado pelo Worker:",
-      resultado
-    );
 
-    const detalheGemini =
+    const detalhe =
       resultado
         ?.detalhes
         ?.error
         ?.message;
 
+
     throw new Error(
-      detalheGemini ||
+      detalhe ||
       resultado?.erro ||
-      "Erro durante a análise da fotografia."
+      "Erro durante a análise."
     );
+
   }
+
 
   return resultado;
+
 }
 
 
 // ======================================================
-// CRIAR RESULTADOS VISUAIS NA PÁGINA
+// PROGRESSO
 // ======================================================
 
-function obterOuCriarAreaResultados() {
-  let area =
-    document.getElementById(
-      "resultadosTesteIA"
+function atualizarProgresso() {
+
+  const resultados =
+    carregarResultados();
+
+
+  const qtd =
+    resultados.length;
+
+
+  totalFotos.textContent =
+    todasAsFotos.length;
+
+
+  analisadas.textContent =
+    qtd;
+
+
+  restantes.textContent =
+    Math.max(
+      todasAsFotos.length - qtd,
+      0
     );
 
-  if (area) {
-    return area;
+
+  progresso.textContent =
+    `${qtd} / ${todasAsFotos.length} fotos`;
+
+
+  const percentual =
+    todasAsFotos.length
+      ? qtd / todasAsFotos.length * 100
+      : 0;
+
+
+  porcentagem.textContent =
+    `${percentual.toFixed(2)}%`;
+
+
+  barra.style.width =
+    `${percentual}%`;
+
+
+  finalistas.textContent =
+    calcularFinalistas();
+
+}
+
+
+function calcularFinalistas() {
+
+  const resultados =
+    carregarResultados();
+
+
+  return resultados.filter(
+    item =>
+      calcularNotaGeral(
+        item.resultado
+      ) >= 9
+  ).length;
+
+}
+
+
+// ======================================================
+// NOTA GERAL
+// ======================================================
+
+function calcularNotaGeral(r) {
+
+  const campos = [
+
+    r.composicao,
+    r.iluminacao,
+    r.nitidez,
+    r.favorecimento_noiva,
+    r.favorecimento_noivo,
+    r.sorriso_expressao_geral,
+    r.conexao_casal,
+    r.romantismo,
+    r.espontaneidade,
+    r.aproveitamento_cenario,
+    r.impacto_emocional,
+    r.representar_casamento
+
+  ];
+
+
+  const validos =
+    campos.filter(
+      valor =>
+        typeof valor === "number"
+    );
+
+
+  if (!validos.length) {
+    return 0;
   }
 
-  area =
-    document.createElement("section");
 
-  area.id =
-    "resultadosTesteIA";
+  return (
+    validos.reduce(
+      (a, b) => a + b,
+      0
+    ) /
+    validos.length
+  );
 
-  area.style.marginTop =
-    "50px";
+}
 
-  area.style.padding =
-    "30px";
 
-  area.style.background =
-    "#191919";
+// ======================================================
+// GALERIA
+// ======================================================
 
-  area.style.borderRadius =
-    "18px";
+function renderizarGaleria() {
 
-  const titulo =
-    document.createElement("h2");
+  galeria.innerHTML =
+    "";
 
-  titulo.textContent =
-    "Resultados do teste com IA";
 
-  const descricao =
-    document.createElement("p");
+  quantidadeExibida =
+    0;
 
-  descricao.textContent =
-    "Avaliações salvas automaticamente.";
 
-  descricao.style.marginBottom =
-    "25px";
+  mostrarMaisFotos();
 
-  area.appendChild(titulo);
-  area.appendChild(descricao);
+}
 
-  const rankingPreview =
-    document.querySelector(
-      ".ranking-preview"
+
+function mostrarMaisFotos() {
+
+  const inicio =
+    quantidadeExibida;
+
+
+  const fim =
+    Math.min(
+      inicio + FOTOS_POR_PAGINA,
+      todasAsFotos.length
     );
 
-  if (rankingPreview) {
-    rankingPreview.parentNode.insertBefore(
-      area,
-      rankingPreview
+
+  for (
+    let i = inicio;
+    i < fim;
+    i++
+  ) {
+
+    const foto =
+      todasAsFotos[i];
+
+
+    const card =
+      document.createElement("div");
+
+
+    card.className =
+      "foto-card";
+
+
+    const imagem =
+      document.createElement("img");
+
+
+    imagem.src =
+      criarUrlMiniatura(
+        foto.id
+      );
+
+
+    imagem.loading =
+      "lazy";
+
+
+    const badge =
+      document.createElement("div");
+
+
+    badge.className =
+      "badge";
+
+
+    badge.textContent =
+      fotoJaAnalisada(foto.id)
+        ? "✅ Analisada"
+        : "⚪ Não analisada";
+
+
+    const info =
+      document.createElement("div");
+
+
+    info.className =
+      "foto-info";
+
+
+    info.innerHTML = `
+
+      <div class="foto-nome">
+        ${foto.name}
+      </div>
+
+      <div class="foto-numero">
+        Foto ${i + 1}
+      </div>
+
+    `;
+
+
+    card.append(
+      imagem,
+      badge,
+      info
     );
+
+
+    galeria.appendChild(
+      card
+    );
+
+  }
+
+
+  quantidadeExibida =
+    fim;
+
+
+  if (
+    quantidadeExibida <
+    todasAsFotos.length
+  ) {
+
+    btnCarregarMais
+      .classList
+      .remove("oculto");
+
+
+    btnCarregarMais.textContent =
+      `Mostrar mais (` +
+      `${todasAsFotos.length - quantidadeExibida} restantes)`;
+
   } else {
-    document.querySelector(".container")
-      .appendChild(area);
+
+    btnCarregarMais
+      .classList
+      .add("oculto");
+
   }
 
-  return area;
 }
 
 
-function mostrarResultadoNaTela(
-  foto,
-  resultado
+// ======================================================
+// BUSCADOR
+// ======================================================
+
+function buscarFotografia(
+  texto
 ) {
-  const area =
-    obterOuCriarAreaResultados();
 
-  const card =
-    document.createElement("div");
-
-  card.style.background =
-    "#222";
-
-  card.style.padding =
-    "20px";
-
-  card.style.borderRadius =
-    "12px";
-
-  card.style.marginBottom =
-    "15px";
+  const termo =
+    texto
+      .toLowerCase()
+      .replace(/\s/g, "");
 
 
-  const titulo =
-    document.createElement("h3");
-
-  titulo.textContent =
-    foto.name;
-
-  titulo.style.marginBottom =
-    "15px";
+  if (!termo) {
+    return [];
+  }
 
 
-  const notas =
-    document.createElement("div");
+  return todasAsFotos.filter(
+    foto =>
+      foto.name
+        .toLowerCase()
+        .includes(termo)
+  );
 
-  notas.innerHTML = `
-    <p>🎨 Composição: <strong>${resultado.composicao ?? "-"}</strong></p>
-    <p>💡 Iluminação: <strong>${resultado.iluminacao ?? "-"}</strong></p>
-    <p>📷 Nitidez: <strong>${resultado.nitidez ?? "-"}</strong></p>
-    <p>👰 Noiva favorecida: <strong>${resultado.favorecimento_noiva ?? "-"}</strong></p>
-    <p>🤵 Noivo favorecido: <strong>${resultado.favorecimento_noivo ?? "-"}</strong></p>
-    <p>😊 Expressão geral: <strong>${resultado.sorriso_expressao_geral ?? "-"}</strong></p>
-    <p>💑 Conexão: <strong>${resultado.conexao_casal ?? "-"}</strong></p>
-    <p>❤️ Romantismo: <strong>${resultado.romantismo ?? "-"}</strong></p>
-    <p>📸 Espontaneidade: <strong>${resultado.espontaneidade ?? "-"}</strong></p>
-    <p>🌅 Cenário: <strong>${resultado.aproveitamento_cenario ?? "-"}</strong></p>
-    <p>📱 Instagram: <strong>${resultado.instagram ?? "-"}</strong></p>
-    <p>🌐 Site/Convite: <strong>${resultado.site_convite ?? "-"}</strong></p>
-  `;
+}
 
 
-  if (
-    Array.isArray(resultado.pontos_fortes) &&
-    resultado.pontos_fortes.length > 0
+function exibirResultadoBusca(
+  fotos
+) {
+
+  resultadoBusca.innerHTML =
+    "";
+
+
+  resultadoBusca.classList
+    .remove("oculto");
+
+
+  if (!fotos.length) {
+
+    resultadoBusca.innerHTML =
+      "<p>Nenhuma fotografia encontrada.</p>";
+
+    return;
+
+  }
+
+
+  fotos.slice(0, 10)
+    .forEach(
+      foto => {
+
+        const analisada =
+          fotoJaAnalisada(
+            foto.id
+          );
+
+
+        const card =
+          document.createElement(
+            "div"
+          );
+
+
+        card.className =
+          "busca-card";
+
+
+        card.innerHTML = `
+
+          <img
+            src="${criarUrlMiniatura(foto.id, 800)}"
+            alt="${foto.name}"
+          >
+
+          <div class="busca-info">
+
+            <h3>
+              ${foto.name}
+            </h3>
+
+            <p>
+              ${
+                analisada
+                  ? "✅ Esta fotografia já foi analisada."
+                  : "⚪ Esta fotografia ainda não foi analisada."
+              }
+            </p>
+
+            <button
+              data-id="${foto.id}"
+              class="btn-analisar-individual"
+            >
+              ${
+                analisada
+                  ? "Ver análise"
+                  : "Analisar com IA"
+              }
+            </button>
+
+          </div>
+
+        `;
+
+
+        resultadoBusca
+          .appendChild(
+            card
+          );
+
+      }
+    );
+
+
+  document
+    .querySelectorAll(
+      ".btn-analisar-individual"
+    )
+    .forEach(
+      botao => {
+
+        botao.addEventListener(
+          "click",
+          async () => {
+
+            const foto =
+              todasAsFotos.find(
+                item =>
+                  item.id ===
+                  botao.dataset.id
+              );
+
+
+            if (!foto) {
+              return;
+            }
+
+
+            if (
+              fotoJaAnalisada(
+                foto.id
+              )
+            ) {
+
+              mostrarAnaliseExistente(
+                foto.id
+              );
+
+            } else {
+
+              await analisarFotoIndividual(
+                foto
+              );
+
+            }
+
+          }
+        );
+
+      }
+    );
+
+}
+
+
+// ======================================================
+// ANÁLISE INDIVIDUAL
+// ======================================================
+
+async function analisarFotoIndividual(
+  foto
+) {
+
+  if (analiseEmAndamento) {
+
+    alert(
+      "Já existe uma análise em andamento."
+    );
+
+    return;
+
+  }
+
+
+  analiseEmAndamento =
+    true;
+
+
+  statusAnalise.textContent =
+    `🤖 Analisando ${foto.name}...`;
+
+
+  try {
+
+    const resultado =
+      await analisarUmaFoto(
+        foto
+      );
+
+
+    salvarResultado(
+      foto,
+      resultado
+    );
+
+
+    atualizarTudo();
+
+
+    mostrarAnaliseExistente(
+      foto.id
+    );
+
+
+    statusAnalise.textContent =
+      `✓ ${foto.name} analisada e salva.`;
+
+
+  } catch (erro) {
+
+    statusAnalise.textContent =
+      "❌ Erro durante a análise.";
+
+
+    alert(
+      erro.message
+    );
+
+
+  } finally {
+
+    analiseEmAndamento =
+      false;
+
+  }
+
+}
+
+
+// ======================================================
+// MOSTRAR ANÁLISE
+// ======================================================
+
+function mostrarAnaliseExistente(
+  id
+) {
+
+  const registro =
+    carregarResultados()
+      .find(
+        item =>
+          item.id === id
+      );
+
+
+  if (!registro) {
+    return;
+  }
+
+
+  const r =
+    registro.resultado;
+
+
+  const nota =
+    calcularNotaGeral(r);
+
+
+  alert(
+
+    `${registro.arquivo}\n\n` +
+
+    `Nota geral provisória: ${nota.toFixed(2)}\n\n` +
+
+    `🎨 Composição: ${r.composicao ?? "-"}\n` +
+    `💡 Iluminação: ${r.iluminacao ?? "-"}\n` +
+    `📷 Nitidez: ${r.nitidez ?? "-"}\n` +
+
+    `👰 Noiva: ${r.favorecimento_noiva ?? "-"}\n` +
+    `🤵 Noivo: ${r.favorecimento_noivo ?? "-"}\n` +
+
+    `😊 Expressão: ${r.sorriso_expressao_geral ?? "-"}\n` +
+    `💑 Conexão: ${r.conexao_casal ?? "-"}\n` +
+    `❤️ Romantismo: ${r.romantismo ?? "-"}\n` +
+
+    `📱 Instagram: ${r.instagram ?? "-"}\n` +
+    `🌐 Site/Convite: ${r.site_convite ?? "-"}`
+
+  );
+
+}
+
+
+// ======================================================
+// CONTINUAR ANÁLISE
+// ======================================================
+
+function encontrarProximaNaoAnalisada(
+  inicio = 0
+) {
+
+  for (
+    let i = inicio;
+    i < todasAsFotos.length;
+    i++
   ) {
-    const fortes =
-      document.createElement("p");
 
-    fortes.style.marginTop =
-      "15px";
+    if (
+      !fotoJaAnalisada(
+        todasAsFotos[i].id
+      )
+    ) {
 
-    fortes.innerHTML =
-      `<strong>Pontos fortes:</strong> ` +
-      resultado.pontos_fortes.join(" • ");
+      return i;
 
-    card.appendChild(titulo);
-    card.appendChild(notas);
-    card.appendChild(fortes);
-  } else {
-    card.appendChild(titulo);
-    card.appendChild(notas);
+    }
+
   }
 
 
-  if (
-    Array.isArray(resultado.problemas) &&
-    resultado.problemas.length > 0
-  ) {
-    const problemas =
-      document.createElement("p");
+  return -1;
 
-    problemas.style.marginTop =
-      "10px";
+}
 
-    problemas.innerHTML =
-      `<strong>Atenção:</strong> ` +
-      resultado.problemas.join(" • ");
 
-    card.appendChild(problemas);
+async function analisarProximas(
+  quantidade
+) {
+
+  if (analiseEmAndamento) {
+    return;
   }
 
 
-  if (resultado.observacao) {
-    const observacao =
-      document.createElement("p");
+  analiseEmAndamento =
+    true;
 
-    observacao.style.marginTop =
-      "10px";
 
-    observacao.textContent =
-      resultado.observacao;
+  pausaSolicitada =
+    false;
 
-    card.appendChild(observacao);
+
+  btnContinuar.disabled =
+    true;
+
+
+  btnPausar.disabled =
+    false;
+
+
+  let concluidasAgora =
+    0;
+
+
+  try {
+
+    while (
+      concluidasAgora <
+      quantidade
+    ) {
+
+      if (pausaSolicitada) {
+
+        statusAnalise.textContent =
+          "⏸ Análise pausada.";
+
+        break;
+
+      }
+
+
+      const indice =
+        encontrarProximaNaoAnalisada();
+
+
+      if (indice === -1) {
+
+        statusAnalise.textContent =
+          "🎉 Todas as fotografias foram analisadas.";
+
+        break;
+
+      }
+
+
+      const foto =
+        todasAsFotos[indice];
+
+
+      statusAnalise.textContent =
+        `🤖 Analisando ${foto.name}... ` +
+        `(${concluidasAgora + 1}/${quantidade})`;
+
+
+      const resultado =
+        await analisarUmaFoto(
+          foto
+        );
+
+
+      salvarResultado(
+        foto,
+        resultado
+      );
+
+
+      concluidasAgora++;
+
+
+      atualizarTudo();
+
+
+      statusAnalise.textContent =
+        `✓ ${foto.name} salva.`;
+
+
+      if (
+        concluidasAgora <
+        quantidade
+      ) {
+
+        await esperar(
+          INTERVALO_ANALISE
+        );
+
+      }
+
+    }
+
+
+    if (!pausaSolicitada) {
+
+      statusAnalise.textContent =
+        `✓ ${concluidasAgora} nova(s) fotografia(s) analisada(s).`;
+
+    }
+
+
+  } catch (erro) {
+
+    console.error(
+      erro
+    );
+
+
+    statusAnalise.textContent =
+      "❌ Análise interrompida.";
+
+
+    alert(
+      "A análise foi interrompida.\n\n" +
+      erro.message +
+      "\n\nAs fotografias concluídas continuam salvas."
+    );
+
+
+  } finally {
+
+    analiseEmAndamento =
+      false;
+
+
+    btnContinuar.disabled =
+      false;
+
+
+    btnPausar.disabled =
+      true;
+
+  }
+
+}
+
+
+// ======================================================
+// RANKINGS
+// ======================================================
+
+function melhorPorCampo(
+  campo
+) {
+
+  const resultados =
+    carregarResultados()
+      .filter(
+        item =>
+          typeof item.resultado?.[campo]
+          === "number"
+      );
+
+
+  if (!resultados.length) {
+    return null;
   }
 
 
-  area.appendChild(card);
+  resultados.sort(
+    (a, b) =>
+      b.resultado[campo] -
+      a.resultado[campo]
+  );
+
+
+  return resultados[0];
+
+}
+
+
+function melhorGeral() {
+
+  const resultados =
+    carregarResultados();
+
+
+  if (!resultados.length) {
+    return null;
+  }
+
+
+  return [...resultados]
+    .sort(
+      (a, b) =>
+        calcularNotaGeral(
+          b.resultado
+        ) -
+        calcularNotaGeral(
+          a.resultado
+        )
+    )[0];
+
+}
+
+
+function atualizarRankings() {
+
+  const resultados =
+    carregarResultados();
+
+
+  if (!resultados.length) {
+
+    rankingGrid.innerHTML =
+      "<p>Nenhuma fotografia analisada ainda.</p>";
+
+    return;
+
+  }
+
+
+  const categorias = [
+
+    [
+      "🏆 Melhor foto geral",
+      melhorGeral(),
+      null
+    ],
+
+    [
+      "❤️ Melhor romântica",
+      melhorPorCampo("romantismo"),
+      "romantismo"
+    ],
+
+    [
+      "😊 Melhor sorriso/expressão",
+      melhorPorCampo("sorriso_expressao_geral"),
+      "sorriso_expressao_geral"
+    ],
+
+    [
+      "💑 Melhor conexão do casal",
+      melhorPorCampo("conexao_casal"),
+      "conexao_casal"
+    ],
+
+    [
+      "👰 Noiva mais favorecida",
+      melhorPorCampo("favorecimento_noiva"),
+      "favorecimento_noiva"
+    ],
+
+    [
+      "🤵 Noivo mais favorecido",
+      melhorPorCampo("favorecimento_noivo"),
+      "favorecimento_noivo"
+    ],
+
+    [
+      "🎨 Melhor composição",
+      melhorPorCampo("composicao"),
+      "composicao"
+    ],
+
+    [
+      "🌅 Melhor cenário",
+      melhorPorCampo("aproveitamento_cenario"),
+      "aproveitamento_cenario"
+    ],
+
+    [
+      "💡 Melhor iluminação",
+      melhorPorCampo("iluminacao"),
+      "iluminacao"
+    ],
+
+    [
+      "📸 Mais espontânea",
+      melhorPorCampo("espontaneidade"),
+      "espontaneidade"
+    ],
+
+    [
+      "💍 Representar casamento",
+      melhorPorCampo("representar_casamento"),
+      "representar_casamento"
+    ],
+
+    [
+      "🖼️ Impressão grande",
+      melhorPorCampo("impressao_grande"),
+      "impressao_grande"
+    ],
+
+    [
+      "📱 Instagram",
+      melhorPorCampo("instagram"),
+      "instagram"
+    ],
+
+    [
+      "🌐 Site/Convite",
+      melhorPorCampo("site_convite"),
+      "site_convite"
+    ]
+
+  ];
+
+
+  rankingGrid.innerHTML =
+    "";
+
+
+  categorias.forEach(
+    ([titulo, registro, campo]) => {
+
+      if (!registro) {
+        return;
+      }
+
+
+      let nota;
+
+
+      if (campo) {
+
+        nota =
+          registro.resultado[campo];
+
+      } else {
+
+        nota =
+          calcularNotaGeral(
+            registro.resultado
+          ).toFixed(2);
+
+      }
+
+
+      const item =
+        document.createElement(
+          "div"
+        );
+
+
+      item.className =
+        "ranking-item";
+
+
+      item.innerHTML = `
+
+        <strong>
+          ${titulo}
+        </strong>
+
+        <span>
+          ${registro.arquivo}
+          — ${nota}
+        </span>
+
+      `;
+
+
+      rankingGrid
+        .appendChild(
+          item
+        );
+
+    }
+  );
+
+}
+
+
+// ======================================================
+// ÚLTIMOS RESULTADOS
+// ======================================================
+
+function atualizarUltimosResultados() {
+
+  const resultados =
+    carregarResultados();
+
+
+  if (!resultados.length) {
+
+    resultadosAnalise.innerHTML =
+      "<p>Nenhuma análise disponível.</p>";
+
+    return;
+
+  }
+
+
+  resultadosAnalise.innerHTML =
+    "";
+
+
+  [...resultados]
+    .reverse()
+    .slice(0, 10)
+    .forEach(
+      registro => {
+
+        const nota =
+          calcularNotaGeral(
+            registro.resultado
+          );
+
+
+        const div =
+          document.createElement(
+            "div"
+          );
+
+
+        div.className =
+          "resultado-item";
+
+
+        div.innerHTML = `
+
+          <strong>
+            ${registro.arquivo}
+          </strong>
+
+          <div class="resultado-notas">
+
+            Nota geral:
+            ${nota.toFixed(2)}
+
+            • Composição:
+            ${registro.resultado.composicao ?? "-"}
+
+            • Conexão:
+            ${registro.resultado.conexao_casal ?? "-"}
+
+            • Romantismo:
+            ${registro.resultado.romantismo ?? "-"}
+
+          </div>
+
+        `;
+
+
+        resultadosAnalise
+          .appendChild(
+            div
+          );
+
+      }
+    );
+
+}
+
+
+// ======================================================
+// ATUALIZAR TUDO
+// ======================================================
+
+function atualizarTudo() {
+
+  atualizarProgresso();
+
+  atualizarRankings();
+
+  atualizarUltimosResultados();
+
+  renderizarGaleria();
+
 }
 
 
@@ -636,296 +1482,170 @@ btnConectar.addEventListener(
     const link =
       driveLink.value.trim();
 
+
     if (!link) {
+
       alert(
-        "Cole primeiro o link público da pasta do Google Drive."
+        "Cole o link da pasta."
       );
 
       return;
+
     }
+
 
     const folderId =
-      extrairIdPasta(link);
+      extrairIdPasta(
+        link
+      );
+
 
     if (!folderId) {
+
       alert(
-        "Não consegui identificar o ID dessa pasta."
+        "Link de pasta inválido."
       );
 
       return;
+
     }
+
 
     btnConectar.disabled =
       true;
 
-    btnConectar.textContent =
-      "Buscando fotos...";
 
     statusPasta.textContent =
-      "Conectando ao Google Drive...";
+      "Buscando fotografias...";
 
-    galeria.innerHTML =
-      "";
-
-    quantidadeExibida =
-      0;
 
     try {
+
       todasAsFotos =
         await buscarFotosDaPasta(
           folderId
         );
 
-      if (
-        todasAsFotos.length === 0
-      ) {
-        statusPasta.textContent =
-          "Nenhuma fotografia encontrada.";
-
-        return;
-      }
-
-      atualizarPainelInicial(
-        todasAsFotos.length
-      );
 
       statusPasta.textContent =
-        `✓ Pasta conectada — ` +
-        `${todasAsFotos.length} fotografias encontradas.`;
+        `✓ ${todasAsFotos.length} fotografias encontradas.`;
+
 
       infoGaleria.textContent =
-        `${todasAsFotos.length} fotografias disponíveis para análise.`;
+        `${todasAsFotos.length} fotografias disponíveis.`;
 
-      btnIniciar.disabled =
+
+      buscaFoto.disabled =
         false;
 
-      salvarProjetoLocal(
-        folderId,
-        link
-      );
 
-      mostrarMaisFotos();
+      btnBuscar.disabled =
+        false;
 
-      alert(
-        `Pasta conectada com sucesso!\n\n` +
-        `${todasAsFotos.length} fotografias encontradas.`
-      );
+
+      quantidadeAnalise.disabled =
+        false;
+
+
+      btnContinuar.disabled =
+        false;
+
+
+      atualizarTudo();
+
 
     } catch (erro) {
-      console.error(erro);
-
-      statusPasta.textContent =
-        "Erro ao acessar a pasta.";
 
       alert(
-        "Não foi possível acessar a pasta.\n\n" +
         erro.message
       );
 
+
+      statusPasta.textContent =
+        "Erro ao conectar pasta.";
+
+
     } finally {
+
       btnConectar.disabled =
         false;
 
-      btnConectar.textContent =
-        "Conectar pasta";
     }
+
   }
 );
 
 
 // ======================================================
-// MOSTRAR MAIS
+// BUSCAR
 // ======================================================
 
-btnCarregarMais.addEventListener(
+btnBuscar.addEventListener(
   "click",
-  mostrarMaisFotos
+  () => {
+
+    const fotos =
+      buscarFotografia(
+        buscaFoto.value
+      );
+
+
+    exibirResultadoBusca(
+      fotos
+    );
+
+  }
+);
+
+
+buscaFoto.addEventListener(
+  "keydown",
+  evento => {
+
+    if (
+      evento.key === "Enter"
+    ) {
+
+      btnBuscar.click();
+
+    }
+
+  }
 );
 
 
 // ======================================================
-// TESTE DE 4 NOVAS FOTOS
+// CONTINUAR
 // ======================================================
 
-btnIniciar.addEventListener(
+btnContinuar.addEventListener(
   "click",
   async () => {
 
-    if (todasAsFotos.length === 0) {
+    const quantidade =
+      Number(
+        quantidadeAnalise.value
+      );
+
+
+    if (
+      !quantidade ||
+      quantidade < 1
+    ) {
+
       alert(
-        "Conecte primeiro a pasta."
+        "Informe uma quantidade válida."
       );
 
       return;
+
     }
 
 
-    if (analiseEmAndamento) {
-      return;
-    }
+    await analisarProximas(
+      quantidade
+    );
 
-
-    analiseEmAndamento =
-      true;
-
-    analisePausada =
-      false;
-
-
-    btnIniciar.disabled =
-      true;
-
-    btnConectar.disabled =
-      true;
-
-    btnPausar.disabled =
-      false;
-
-    btnIniciar.textContent =
-      "IA analisando...";
-
-
-    const inicio =
-      INDICE_INICIAL_TESTE;
-
-    const fim =
-      Math.min(
-        inicio + QUANTIDADE_NOVAS_TESTE,
-        todasAsFotos.length
-      );
-
-
-    try {
-
-      for (
-        let i = inicio;
-        i < fim;
-        i++
-      ) {
-
-        if (analisePausada) {
-          statusPasta.textContent =
-            "⏸ Análise pausada.";
-
-          break;
-        }
-
-
-        const foto =
-          todasAsFotos[i];
-
-
-        const jaSalvos =
-          carregarResultadosSalvos();
-
-
-        const jaExiste =
-          jaSalvos.some(
-            item => item.id === foto.id
-          );
-
-
-        if (jaExiste) {
-          console.log(
-            `Pulando ${foto.name}: já analisada.`
-          );
-
-          continue;
-        }
-
-
-        statusPasta.textContent =
-          `🤖 Analisando ${foto.name}...`;
-
-
-        progresso.textContent =
-          `IA analisando foto ${i + 1} de ${todasAsFotos.length}`;
-
-
-        const resultado =
-          await analisarUmaFoto(
-            foto
-          );
-
-
-        salvarResultadoIndividual(
-          foto,
-          resultado
-        );
-
-
-        mostrarResultadoNaTela(
-          foto,
-          resultado
-        );
-
-
-        atualizarProgresso();
-
-
-        console.log(
-          `✓ ${foto.name} concluída.`,
-          resultado
-        );
-
-
-        // Espera antes da próxima chamada.
-        if (i < fim - 1) {
-          statusPasta.textContent =
-            `✓ ${foto.name} salva. Aguardando próxima foto...`;
-
-          await esperar(
-            INTERVALO_ENTRE_ANALISES
-          );
-        }
-      }
-
-
-      if (!analisePausada) {
-        statusPasta.textContent =
-          "✓ Teste concluído.";
-
-        const resultados =
-          carregarResultadosSalvos();
-
-        alert(
-          `TESTE CONCLUÍDO!\n\n` +
-          `${resultados.length} análises estão salvas neste navegador.\n\n` +
-          `As fotos 2 a 5 foram processadas sem repetir a primeira requisição.`
-        );
-      }
-
-    } catch (erro) {
-      console.error(
-        "Erro durante o teste:",
-        erro
-      );
-
-      statusPasta.textContent =
-        "❌ Erro durante a análise.";
-
-      alert(
-        "A análise foi interrompida.\n\n" +
-        erro.message +
-        "\n\nTudo que terminou antes do erro continua salvo."
-      );
-
-    } finally {
-      analiseEmAndamento =
-        false;
-
-      btnIniciar.disabled =
-        false;
-
-      btnConectar.disabled =
-        false;
-
-      btnPausar.disabled =
-        true;
-
-      btnIniciar.textContent =
-        "Iniciar análise";
-    }
   }
 );
 
@@ -938,17 +1658,26 @@ btnPausar.addEventListener(
   "click",
   () => {
 
-    if (!analiseEmAndamento) {
-      return;
-    }
-
-    analisePausada =
+    pausaSolicitada =
       true;
+
 
     btnPausar.disabled =
       true;
 
-    statusPasta.textContent =
-      "⏸ Pausa solicitada. Finalizando a foto atual...";
+
+    statusAnalise.textContent =
+      "⏸ Pausa solicitada. Finalizando a fotografia atual...";
+
   }
+);
+
+
+// ======================================================
+// MOSTRAR MAIS
+// ======================================================
+
+btnCarregarMais.addEventListener(
+  "click",
+  mostrarMaisFotos
 );

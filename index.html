@@ -1,9 +1,12 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <title>Analisador de Fotos do Casamento</title>
+
   <link rel="stylesheet" href="style.css">
 </head>
 
@@ -13,20 +16,28 @@
 
     <header>
       <h1>Analisador de Fotos do Casamento</h1>
+
       <p>
-        Conecte a pasta pública do Google Drive para preparar as fotografias
-        para análise com IA.
+        Conecte a pasta do Google Drive, pesquise fotografias
+        e escolha quais deseja analisar com inteligência artificial.
       </p>
     </header>
 
-    <section class="conexao">
 
-      <div class="formulario">
+    <!-- ======================================= -->
+    <!-- CONEXÃO GOOGLE DRIVE -->
+    <!-- ======================================= -->
+
+    <section class="bloco">
+
+      <h2>Google Drive</h2>
+
+      <div class="linha">
 
         <input
           type="url"
           id="driveLink"
-          placeholder="https://drive.google.com/drive/folders/..."
+          placeholder="Cole o link público da pasta do Google Drive"
         >
 
         <button id="btnConectar">
@@ -35,31 +46,37 @@
 
       </div>
 
-      <p id="statusPasta" class="status-pasta">
+      <p id="statusPasta">
         Nenhuma pasta conectada.
       </p>
 
     </section>
 
 
-    <section class="painel">
+    <!-- ======================================= -->
+    <!-- PROGRESSO -->
+    <!-- ======================================= -->
 
-      <div class="painel-topo">
+    <section class="bloco">
+
+      <div class="topo-progresso">
 
         <div>
-          <h2>Análise do ensaio</h2>
+          <h2>Progresso geral</h2>
           <p id="progresso">0 / 0 fotos</p>
         </div>
 
-        <div id="porcentagem">
+        <strong id="porcentagem">
           0%
-        </div>
+        </strong>
 
       </div>
 
-
       <div class="barra-container">
-        <div class="barra" id="barra"></div>
+        <div
+          class="barra"
+          id="barra"
+        ></div>
       </div>
 
 
@@ -87,76 +104,184 @@
 
       </div>
 
+    </section>
 
-      <div class="acoes">
 
-        <button id="btnIniciar" disabled>
-          Iniciar análise
+    <!-- ======================================= -->
+    <!-- BUSCADOR -->
+    <!-- ======================================= -->
+
+    <section class="bloco">
+
+      <h2>🔎 Buscar fotografia</h2>
+
+      <p>
+        Digite o número ou parte do nome do arquivo.
+        Exemplo: 8186
+      </p>
+
+      <div class="linha busca-linha">
+
+        <input
+          type="text"
+          id="buscaFoto"
+          placeholder="Ex.: 8186"
+          disabled
+        >
+
+        <button
+          id="btnBuscar"
+          disabled
+        >
+          Buscar
         </button>
 
-        <button id="btnPausar" disabled>
+      </div>
+
+
+      <div
+        id="resultadoBusca"
+        class="resultado-busca oculto"
+      ></div>
+
+    </section>
+
+
+    <!-- ======================================= -->
+    <!-- ANÁLISE CONTÍNUA -->
+    <!-- ======================================= -->
+
+    <section class="bloco">
+
+      <h2>▶️ Análise contínua</h2>
+
+      <p>
+        Você controla quantas fotografias serão analisadas.
+      </p>
+
+
+      <div class="controles-analise">
+
+        <div>
+
+          <label>
+            Quantidade
+          </label>
+
+          <input
+            type="number"
+            id="quantidadeAnalise"
+            value="10"
+            min="1"
+            max="100"
+            disabled
+          >
+
+        </div>
+
+
+        <button
+          id="btnContinuar"
+          disabled
+        >
+          Continuar da próxima não analisada
+        </button>
+
+
+        <button
+          id="btnPausar"
+          disabled
+        >
           Pausar
         </button>
 
       </div>
 
+
+      <p
+        id="statusAnalise"
+        class="status-analise"
+      >
+        Nenhuma análise em andamento.
+      </p>
+
     </section>
 
 
-    <section class="fotos-section" id="fotosSection">
+    <!-- ======================================= -->
+    <!-- GALERIA -->
+    <!-- ======================================= -->
 
-      <div class="titulo-galeria">
+    <section class="fotos-section">
 
-        <div>
-          <h2>Fotografias encontradas</h2>
-          <p id="infoGaleria">
-            Conecte uma pasta para visualizar as fotografias.
-          </p>
-        </div>
+      <h2>Fotografias</h2>
 
-      </div>
-
-
-      <div id="galeria" class="galeria"></div>
+      <p id="infoGaleria">
+        Conecte a pasta para visualizar as fotografias.
+      </p>
 
 
-      <button id="btnCarregarMais" class="carregar-mais oculto">
-        Mostrar mais fotos
+      <div
+        id="galeria"
+        class="galeria"
+      ></div>
+
+
+      <button
+        id="btnCarregarMais"
+        class="carregar-mais oculto"
+      >
+        Mostrar mais
       </button>
 
     </section>
 
 
-    <section class="ranking-preview">
+    <!-- ======================================= -->
+    <!-- RANKING PROVISÓRIO -->
+    <!-- ======================================= -->
 
-      <h2>Rankings finais</h2>
+    <section class="bloco ranking">
+
+      <h2>🏆 Rankings provisórios</h2>
 
       <p>
-        Estes rankings serão liberados após a conclusão da análise.
+        Os rankings serão atualizados conforme novas
+        fotografias forem analisadas.
       </p>
 
-      <div class="ranking-grid">
+      <div
+        id="rankingGrid"
+        class="ranking-grid"
+      >
+        <p>
+          Nenhuma fotografia analisada ainda.
+        </p>
+      </div>
 
-        <div>🏆 Melhor foto geral</div>
-        <div>❤️ Melhor foto romântica</div>
-        <div>😊 Melhor sorriso/expressão</div>
-        <div>💑 Melhor conexão do casal</div>
-        <div>👰 Noiva mais favorecida</div>
-        <div>🤵 Noivo mais favorecido</div>
-        <div>🎨 Melhor composição</div>
-        <div>🌅 Melhor cenário</div>
-        <div>💡 Melhor iluminação</div>
-        <div>📸 Mais espontânea</div>
-        <div>💍 Melhor para representar o casamento</div>
-        <div>🖼️ Melhor para impressão grande</div>
-        <div>📱 Melhor para Instagram</div>
-        <div>🌐 Melhor para site/convite</div>
+    </section>
+
+
+    <!-- ======================================= -->
+    <!-- ÚLTIMAS ANÁLISES -->
+    <!-- ======================================= -->
+
+    <section class="bloco">
+
+      <h2>Últimas análises</h2>
+
+      <div id="resultadosAnalise">
+
+        <p>
+          Nenhuma análise disponível.
+        </p>
 
       </div>
 
     </section>
 
   </main>
+
 
   <script src="script.js"></script>
 
