@@ -6,54 +6,159 @@
   <title>Analisador de Fotos do Casamento</title>
   <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
 
   <main class="container">
-    <h1>Analisador de Fotos do Casamento</h1>
-    <p>
-      Cole abaixo o link público da pasta do Google Drive.
-    </p>
 
-    <div class="formulario">
-      <input
-        type="url"
-        id="driveLink"
-        placeholder="https://drive.google.com/drive/folders/..."
-      >
+    <header>
+      <h1>Analisador de Fotos do Casamento</h1>
+      <p>
+        Conecte a pasta pública do Google Drive para preparar as fotografias
+        para análise com IA.
+      </p>
+    </header>
 
-      <button id="btnConectar">
-        Conectar pasta
-      </button>
-    </div>
+    <section class="conexao">
 
-    <section class="painel" id="painel">
-      <h2>Análise</h2>
+      <div class="formulario">
+
+        <input
+          type="url"
+          id="driveLink"
+          placeholder="https://drive.google.com/drive/folders/..."
+        >
+
+        <button id="btnConectar">
+          Conectar pasta
+        </button>
+
+      </div>
+
+      <p id="statusPasta" class="status-pasta">
+        Nenhuma pasta conectada.
+      </p>
+
+    </section>
+
+
+    <section class="painel">
+
+      <div class="painel-topo">
+
+        <div>
+          <h2>Análise do ensaio</h2>
+          <p id="progresso">0 / 0 fotos</p>
+        </div>
+
+        <div id="porcentagem">
+          0%
+        </div>
+
+      </div>
+
 
       <div class="barra-container">
         <div class="barra" id="barra"></div>
       </div>
 
-      <p id="progresso">0 / 0 fotos</p>
 
       <div class="status-grid">
-        <div>
+
+        <div class="card-status">
+          <strong id="totalFotos">0</strong>
+          <span>Total</span>
+        </div>
+
+        <div class="card-status">
           <strong id="analisadas">0</strong>
           <span>Analisadas</span>
         </div>
 
-        <div>
+        <div class="card-status">
           <strong id="restantes">0</strong>
           <span>Restantes</span>
         </div>
 
-        <div>
+        <div class="card-status">
           <strong id="finalistas">0</strong>
           <span>Finalistas</span>
         </div>
+
       </div>
+
+
+      <div class="acoes">
+
+        <button id="btnIniciar" disabled>
+          Iniciar análise
+        </button>
+
+        <button id="btnPausar" disabled>
+          Pausar
+        </button>
+
+      </div>
+
     </section>
+
+
+    <section class="fotos-section" id="fotosSection">
+
+      <div class="titulo-galeria">
+
+        <div>
+          <h2>Fotografias encontradas</h2>
+          <p id="infoGaleria">
+            Conecte uma pasta para visualizar as fotografias.
+          </p>
+        </div>
+
+      </div>
+
+
+      <div id="galeria" class="galeria"></div>
+
+
+      <button id="btnCarregarMais" class="carregar-mais oculto">
+        Mostrar mais fotos
+      </button>
+
+    </section>
+
+
+    <section class="ranking-preview">
+
+      <h2>Rankings finais</h2>
+
+      <p>
+        Estes rankings serão liberados após a conclusão da análise.
+      </p>
+
+      <div class="ranking-grid">
+
+        <div>🏆 Melhor foto geral</div>
+        <div>❤️ Melhor foto romântica</div>
+        <div>😊 Melhor sorriso/expressão</div>
+        <div>💑 Melhor conexão do casal</div>
+        <div>👰 Noiva mais favorecida</div>
+        <div>🤵 Noivo mais favorecido</div>
+        <div>🎨 Melhor composição</div>
+        <div>🌅 Melhor cenário</div>
+        <div>💡 Melhor iluminação</div>
+        <div>📸 Mais espontânea</div>
+        <div>💍 Melhor para representar o casamento</div>
+        <div>🖼️ Melhor para impressão grande</div>
+        <div>📱 Melhor para Instagram</div>
+        <div>🌐 Melhor para site/convite</div>
+
+      </div>
+
+    </section>
+
   </main>
 
   <script src="script.js"></script>
+
 </body>
 </html>
