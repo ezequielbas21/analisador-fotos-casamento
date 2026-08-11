@@ -6,8 +6,8 @@ const analisadas = document.getElementById("analisadas");
 const restantes = document.getElementById("restantes");
 const finalistas = document.getElementById("finalistas");
 
-// COLE SUA CHAVE DA GOOGLE DRIVE API AQUI
-const API_KEY = AIzaSyD_jxJznvmnnRpBXNVMlXj0SGKoN9zBC1g ;
+// COLE SUA NOVA CHAVE ENTRE AS ASPAS
+const API_KEY = "AIzaSyAPl2tgM9c07P0FtM9saMMvWa8vi_rzR08";
 
 function extrairIdPasta(link) {
   const match = link.match(/\/folders\/([a-zA-Z0-9_-]+)/);
@@ -43,7 +43,9 @@ async function buscarFotosDaPasta(folderId) {
 
     if (!resposta.ok) {
       const erro = await resposta.json();
-      console.error(erro);
+
+      console.error("Erro Google Drive:", erro);
+
       throw new Error(
         erro?.error?.message || "Erro ao acessar o Google Drive."
       );
@@ -58,6 +60,7 @@ async function buscarFotosDaPasta(folderId) {
     fotos = fotos.concat(imagens);
 
     pageToken = dados.nextPageToken || "";
+
   } while (pageToken);
 
   return fotos;
@@ -116,6 +119,7 @@ btnConectar.addEventListener("click", async () => {
       "Não foi possível acessar a pasta.\n\n" +
       erro.message
     );
+
   } finally {
     btnConectar.disabled = false;
     btnConectar.textContent = "Conectar pasta";
